@@ -48,14 +48,14 @@ export function Header() {
             className="hidden sm:inline-flex"
             asChild
           >
-            <Link href="/auth">Login</Link>
+            <Link href="/login">Login</Link>
           </Button>
           <Button 
             size="sm" 
             className="bg-blue-600 hover:bg-blue-700"
             asChild
           >
-            <Link href="/auth">Sign Up</Link>
+            <Link href="/signup">Sign Up</Link>
           </Button>
         </div>
       </div>

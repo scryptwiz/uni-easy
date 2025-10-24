@@ -6,16 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { GraduationCap, Eye, EyeOff } from "lucide-react";
 
-export default function AuthPage() {
-  const [isLogin, setIsLogin] = useState(true);
+export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle authentication logic here
-    console.log("Form submitted:", { email, password, isLogin });
+    // Handle signup logic here
+    console.log("Signup submitted:", { email, password });
   };
 
   return (
@@ -38,36 +37,15 @@ export default function AuthPage() {
               <span className="text-3xl font-bold text-gray-900">UniEase</span>
             </div>
           </Link>
-          <p className="text-gray-600 text-lg">Simplifying student life at LAUTECH</p>
+          <p className="text-gray-600 text-lg">Create your account and start your journey</p>
         </div>
 
-        {/* Auth Form */}
+        {/* Signup Form */}
         <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-8 border border-white/20">
-          {/* Toggle Buttons */}
-          <div className="flex mb-8 bg-gray-100 rounded-xl p-1">
-            <button
-              onClick={() => setIsLogin(true)}
-              className={`flex-1 py-3 px-4 text-sm font-semibold rounded-lg transition-all duration-300 ${
-                isLogin
-                  ? "bg-white text-blue-600 shadow-md transform scale-105"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              Login
-            </button>
-            <button
-              onClick={() => setIsLogin(false)}
-              className={`flex-1 py-3 px-4 text-sm font-semibold rounded-lg transition-all duration-300 ${
-                !isLogin
-                  ? "bg-white text-blue-600 shadow-md transform scale-105"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              Sign Up
-            </button>
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold text-gray-900 text-center">Sign Up</h1>
           </div>
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <label htmlFor="email" className="block text-sm font-semibold text-gray-700">
@@ -95,7 +73,7 @@ export default function AuthPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
+                  placeholder="Create a password"
                   className="w-full h-12 pr-12 border-2 border-gray-200 focus:border-blue-500 rounded-xl transition-colors"
                 />
                 <button
@@ -112,35 +90,44 @@ export default function AuthPage() {
               </div>
             </div>
 
-            {isLogin && (
-              <div className="text-right">
-                <a
-                  href="#"
-                  className="text-sm text-blue-600 hover:text-blue-500 font-medium transition-colors"
-                >
-                  Forgot password?
+            <div className="flex items-center">
+              <input
+                id="terms"
+                name="terms"
+                type="checkbox"
+                required
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="terms" className="ml-2 block text-sm text-gray-700">
+                I agree to the{" "}
+                <a href="#" className="text-blue-600 hover:text-blue-500 font-medium">
+                  Terms of Service
+                </a>{" "}
+                and{" "}
+                <a href="#" className="text-blue-600 hover:text-blue-500 font-medium">
+                  Privacy Policy
                 </a>
-              </div>
-            )}
+              </label>
+            </div>
 
             <Button
               type="submit"
               className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-4 text-base font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
             >
-              {isLogin ? "Login" : "Sign Up"}
+              Create Account
             </Button>
           </form>
 
           {/* Footer */}
           <div className="mt-8 text-center">
             <p className="text-sm text-gray-600">
-              {isLogin ? "Don't have an account? " : "Already have an account? "}
-              <button
-                onClick={() => setIsLogin(!isLogin)}
+              Already have an account?{" "}
+              <Link
+                href="/login"
                 className="text-blue-600 hover:text-blue-500 font-semibold transition-colors hover:underline"
               >
-                {isLogin ? "Sign up" : "Login"}
-              </button>
+                Sign in
+              </Link>
             </p>
           </div>
         </div>
