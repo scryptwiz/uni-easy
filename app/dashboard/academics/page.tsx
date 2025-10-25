@@ -53,7 +53,7 @@ interface Assignment {
   daysRemaining: number;
   type: "assignment" | "exam" | "project" | "quiz";
   priority: "low" | "medium" | "high" | "urgent";
-  icon: any;
+  icon: React.ComponentType<{ className?: string }>;
 }
 
 interface Notification {
@@ -63,7 +63,7 @@ interface Notification {
   description: string;
   timestamp: string;
   color: string;
-  icon: any;
+  icon: React.ComponentType<{ className?: string }>;
 }
 
 export default function AcademicsDashboard() {
@@ -80,7 +80,7 @@ export default function AcademicsDashboard() {
     today: { hours: 0, sessionCount: 0 },
     week: { hours: 0, sessionCount: 0 },
     month: { hours: 0, sessionCount: 0 },
-    streak: 0,
+    streak: 1,
     recentSessions: []
   });
   const { data: session, isPending } = useSession();
@@ -109,7 +109,7 @@ export default function AcademicsDashboard() {
       const studyStatsData = await studyStatsResponse.json();
 
       // Transform courses data to include colors and progress
-      const transformedCourses = coursesData.courses?.map((course: any, index: number) => ({
+      const transformedCourses = coursesData.courses?.map((course: { courseId: string; course: { code: string; title: string; instructor: string; credits: number; semester: string }; progress?: number }, index: number) => ({
         id: course.courseId,
         code: course.course.code,
         title: course.course.title,
@@ -121,7 +121,7 @@ export default function AcademicsDashboard() {
       })) || [];
 
       // Transform assignments data
-      const transformedAssignments = assignmentsData.assignments?.map((assignment: any) => ({
+      const transformedAssignments = assignmentsData.assignments?.map((assignment: { id: string; title: string; dueDate: string; daysRemaining: number; type: string; priority: string; course: { code: string } }) => ({
         id: assignment.id,
         title: assignment.title,
         course: assignment.course.code,
@@ -135,7 +135,7 @@ export default function AcademicsDashboard() {
       })) || [];
 
       // Transform notifications data
-      const transformedNotifications = notificationsData.notifications?.map((notification: any) => ({
+      const transformedNotifications = notificationsData.notifications?.map((notification: { id: string; type: string; title: string; message: string; createdAt: string }) => ({
         id: notification.id,
         type: notification.type,
         title: notification.title,
@@ -161,7 +161,7 @@ export default function AcademicsDashboard() {
           today: studyStatsData.stats.today || { hours: 0, sessionCount: 0 },
           week: studyStatsData.stats.week || { hours: 0, sessionCount: 0 },
           month: studyStatsData.stats.month || { hours: 0, sessionCount: 0 },
-          streak: studyStatsData.stats.streak || 0,
+          streak: studyStatsData.stats.streak || 1,
           recentSessions: studyStatsData.stats.recentSessions || []
         });
       } else {
@@ -213,7 +213,7 @@ export default function AcademicsDashboard() {
     fetchAcademicData();
   };
 
-  const handleAddAssignmentSuccess = (newAssignment: any) => {
+  const handleAddAssignmentSuccess = (newAssignment: { id: string; title: string; dueDate: string; type: string; priority: string; course?: { code: string } }) => {
     // Optimistic update - add assignment immediately to UI
     const optimisticAssignment = {
       id: newAssignment.id,
@@ -221,8 +221,8 @@ export default function AcademicsDashboard() {
       course: newAssignment.course?.code || "Unknown Course",
       dueDate: new Date(newAssignment.dueDate).toLocaleDateString(),
       daysRemaining: Math.max(0, Math.ceil((new Date(newAssignment.dueDate).getTime() - new Date().getTime()) / (1000 * 3600 * 24))),
-      type: newAssignment.type,
-      priority: newAssignment.priority,
+      type: newAssignment.type as "assignment" | "exam" | "project" | "quiz",
+      priority: newAssignment.priority as "low" | "medium" | "high" | "urgent",
       icon: newAssignment.type === 'project' ? FileText :
             newAssignment.type === 'exam' ? BookOpen :
             newAssignment.type === 'quiz' ? Target : FileText
@@ -522,7 +522,7 @@ export default function AcademicsDashboard() {
                     <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-6 border border-green-200">
                       <div className="flex items-center justify-between mb-4">
                         <div>
-                          <h3 className="text-lg font-bold text-gray-900">Today's Focus</h3>
+                          <h3 className="text-lg font-bold text-gray-900">Today&apos;s Focus</h3>
                           <p className="text-sm text-gray-600">Track your study progress</p>
                         </div>
                         <div className="text-right">
@@ -543,7 +543,7 @@ export default function AcademicsDashboard() {
                         <div className="flex items-center space-x-4 text-sm text-gray-600">
                           <span className="flex items-center">
                             <Zap className="h-4 w-4 mr-1 text-yellow-500" />
-                            {studyStats.streak || 0} day streak
+                            {studyStats.streak || 1} day streak
                           </span>
                           <span className="flex items-center">
                             <Target className="h-4 w-4 mr-1 text-blue-500" />
@@ -558,7 +558,7 @@ export default function AcademicsDashboard() {
                       <h4 className="font-semibold text-gray-900">Recent Sessions</h4>
                       <div className="space-y-2 max-h-32 overflow-y-auto">
                         {studyStats.recentSessions && studyStats.recentSessions.length > 0 ? (
-                          studyStats.recentSessions.slice(0, 3).map((session, index) => {
+                          studyStats.recentSessions.slice(0, 3).map((session: { id: string; topic: string; duration: number; createdAt: string | Date }, index: number) => {
                             const colors = ['bg-green-500', 'bg-blue-500', 'bg-purple-500'];
                             const formatDuration = (minutes: number) => {
                               const hours = Math.floor(minutes / 60);

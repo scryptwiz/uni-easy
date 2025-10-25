@@ -79,7 +79,7 @@ export default function StudyHoursPage() {
     dailyHours: 4,
     weeklyHours: 20,
     streakGoal: 30,
-    currentStreak: 0
+    currentStreak: 1
   });
   const [savingGoals, setSavingGoals] = useState(false);
   const [startingSession, setStartingSession] = useState(false);

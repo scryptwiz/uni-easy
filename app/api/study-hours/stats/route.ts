@@ -104,10 +104,10 @@ export async function GET(request: NextRequest) {
       .groupBy(sql`DATE(${studySessions.createdAt})`)
       .orderBy(sql`DATE(${studySessions.createdAt}) DESC`);
 
-    // Calculate streak
+    // Calculate streak (starts from 1 on first day)
     let streak = 0;
     const todayStr = today.toISOString().split('T')[0];
-    let currentDate = new Date(today);
+    const currentDate = new Date(today);
     
     for (const session of streakQuery) {
       const sessionDate = new Date(session.studyDate).toISOString().split('T')[0];
@@ -119,6 +119,11 @@ export async function GET(request: NextRequest) {
       } else if (sessionDate < expectedDate) {
         break;
       }
+    }
+    
+    // If there are any study sessions, ensure streak is at least 1
+    if (streakQuery.length > 0 && streak === 0) {
+      streak = 1;
     }
 
     const stats = {

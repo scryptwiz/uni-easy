@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
           dailyHours: 4,
           weeklyHours: 20, 
           streakGoal: 30,
-          currentStreak: 0
+          currentStreak: 1
         } 
       });
     }
