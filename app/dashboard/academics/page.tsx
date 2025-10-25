@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { CourseCardSkeleton, AssignmentCardSkeleton, StatsCardSkeleton } from "@/components/SkeletonComponents";
 import {
   BookOpen,
   Clock,
@@ -254,7 +255,8 @@ export default function AcademicsDashboard() {
     fetchAcademicData();
   };
 
-  if (isPending || loading) {
+  // Only show full loading for authentication
+  if (isPending) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -374,7 +376,13 @@ export default function AcademicsDashboard() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {courses.length > 0 ? (
+                  {loading ? (
+                    <div className="space-y-4">
+                      <CourseCardSkeleton />
+                      <CourseCardSkeleton />
+                      <CourseCardSkeleton />
+                    </div>
+                  ) : courses.length > 0 ? (
                     <div className="space-y-4">
                       {courses.map((course) => (
                         <div
@@ -447,7 +455,13 @@ export default function AcademicsDashboard() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {assignments.length > 0 ? (
+                  {loading ? (
+                    <div className="space-y-3">
+                      <AssignmentCardSkeleton />
+                      <AssignmentCardSkeleton />
+                      <AssignmentCardSkeleton />
+                    </div>
+                  ) : assignments.length > 0 ? (
                     <div className="space-y-3">
                       {assignments.map((assignment) => {
                         const IconComponent = assignment.icon;

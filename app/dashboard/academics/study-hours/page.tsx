@@ -21,6 +21,7 @@ import { DashboardSidebar } from "@/components/DashboardSidebar";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { StartStudySessionModal } from "@/components/StartStudySessionModal";
 import { StudyGoalsModal } from "@/components/StudyGoalsModal";
+import { StudySessionSkeleton, StatsCardSkeleton } from "@/components/SkeletonComponents";
 
 interface StudySession {
   id: string;
@@ -364,7 +365,8 @@ export default function StudyHoursPage() {
   }, [session, fetchStudyData]);
 
 
-  if (isPending || loading) {
+  // Only show full loading for authentication
+  if (isPending) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -413,6 +415,15 @@ export default function StudyHoursPage() {
 
             {/* Stats Overview */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              {loading ? (
+                <>
+                  <StatsCardSkeleton />
+                  <StatsCardSkeleton />
+                  <StatsCardSkeleton />
+                  <StatsCardSkeleton />
+                </>
+              ) : (
+                <>
               <Card className="border-0 shadow-md">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
@@ -468,6 +479,8 @@ export default function StudyHoursPage() {
                   </div>
                 </CardContent>
               </Card>
+                </>
+              )}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

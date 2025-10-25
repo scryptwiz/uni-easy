@@ -8,6 +8,7 @@ import { DashboardSidebar } from "@/components/DashboardSidebar";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { StatsCardSkeleton, DashboardHeaderSkeleton, SidebarSkeleton } from "@/components/SkeletonComponents";
 import {
   BookOpen,
   Calendar,
@@ -99,7 +100,8 @@ export default function DashboardPage() {
     };
   }, [session?.user?.id, fetchStats]);
 
-  if (isPending || loading) {
+  // Don't show loading for authentication, only for data loading
+  if (isPending) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -148,6 +150,15 @@ export default function DashboardPage() {
 
             {/* Quick Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              {loading ? (
+                <>
+                  <StatsCardSkeleton />
+                  <StatsCardSkeleton />
+                  <StatsCardSkeleton />
+                  <StatsCardSkeleton />
+                </>
+              ) : (
+                <>
               <Card className="hover:shadow-lg transition-all duration-300 border-0 shadow-md">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
@@ -207,6 +218,8 @@ export default function DashboardPage() {
                   </div>
                 </CardContent>
               </Card>
+                </>
+              )}
             </div>
 
             {/* Quick Access */}

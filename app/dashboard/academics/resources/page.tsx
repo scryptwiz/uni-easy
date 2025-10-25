@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
 import { DashboardHeader } from "@/components/DashboardHeader";
+import { CourseCardSkeleton, AssignmentCardSkeleton } from "@/components/SkeletonComponents";
 
 interface PastQuestion {
   id: string;
@@ -156,7 +157,8 @@ export default function ResourcesPage() {
     }
   };
 
-  if (isPending || loading) {
+  // Only show full loading for authentication
+  if (isPending) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">

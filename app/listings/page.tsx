@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, MapPin, Star, Heart, Filter, Shield, GraduationCap } from "lucide-react";
 import { listings, amenityIcons, priceRanges, roomTypes, amenityFilters, sortOptions } from "@/lib/constants";
 import { Navbar } from "@/components/Navbar";
+import { PropertyCardSkeleton } from "@/components/SkeletonComponents";
 
 export default function ListingsPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -17,6 +18,15 @@ export default function ListingsPage() {
   const [selectedAmenities, setSelectedAmenities] = useState("");
   const [sortBy, setSortBy] = useState("");
   const [favorites, setFavorites] = useState<number[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Simulate loading for better UX
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const toggleFavorite = (id: number) => {
     setFavorites(prev => 
@@ -244,7 +254,17 @@ export default function ListingsPage() {
         <section>
           <h2 className="text-2xl font-bold text-gray-900 mb-6">All Listings</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredListings.map((listing) => (
+            {loading ? (
+              <>
+                <PropertyCardSkeleton />
+                <PropertyCardSkeleton />
+                <PropertyCardSkeleton />
+                <PropertyCardSkeleton />
+                <PropertyCardSkeleton />
+                <PropertyCardSkeleton />
+              </>
+            ) : (
+            filteredListings.map((listing) => (
               <Card key={listing.id} className="group hover:shadow-xl transition-all duration-300 overflow-hidden p-0">
                 <div className="relative">
                   <div className="h-48 bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
@@ -317,7 +337,8 @@ export default function ListingsPage() {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+            ))
+            )}
           </div>
         </section>
       </main>
