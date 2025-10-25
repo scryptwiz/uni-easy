@@ -180,4 +180,13 @@
   .animation-delay-1300 {
     transition-delay: 1.3s;
   }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }

@@ -2,19 +2,42 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { GraduationCap, Eye, EyeOff } from "lucide-react";
+import { signUp } from "@/lib/auth-client";
 
 export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const router = useRouter();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle signup logic here
-    console.log("Signup submitted:", { email, password });
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const result = await signUp.email({
+        email,
+        password,
+        name: email.split("@")[0], // Use email prefix as name for now
+      });
+
+      if (result.error) {
+        setError(result.error.message || "Signup failed");
+      } else {
+        router.push("/dashboard");
+      }
+    } catch {
+      setError("An unexpected error occurred");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -110,12 +133,19 @@ export default function SignupPage() {
               </label>
             </div>
 
-            <Button
-              type="submit"
-              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-4 text-base font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-            >
-              Create Account
-            </Button>
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-4 text-base font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? "Creating Account..." : "Create Account"}
+                </Button>
+                
+                {error && (
+                  <div className="text-red-600 text-sm text-center mt-2">
+                    {error}
+                  </div>
+                )}
           </form>
 
           {/* Footer */}

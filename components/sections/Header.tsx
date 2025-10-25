@@ -18,25 +18,29 @@ export function Header() {
 
         {/* Navigation - Hidden on mobile */}
         <nav className="hidden md:flex items-center space-x-8">
-          <a
-            href="#about"
+          <Link
+            href="/"
             className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
-            onClick={(e) => {
-              e.preventDefault();
-              document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' });
-            }}
           >
-            About Us
+            Home
+          </Link>
+          <Link
+            href="/listings"
+            className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
+          >
+            Housing
+          </Link>
+          <a
+            href="#"
+            className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            Community
           </a>
           <a
-            href="#features"
+            href="#"
             className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
-            onClick={(e) => {
-              e.preventDefault();
-              document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
-            }}
           >
-            Features
+            Resources
           </a>
         </nav>
 
