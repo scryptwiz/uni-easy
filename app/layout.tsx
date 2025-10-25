@@ -16,6 +16,22 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "UniEase - Simplifying Student Life",
   description: "Your all-in-one platform for academic success, housing, and campus life",
+  icons: [
+    { rel: "icon", url: "/logo.svg", type: "image/svg+xml" },
+    { rel: "apple-touch-icon", url: "/logo.svg" },
+  ],
+  openGraph: {
+    title: "UniEase - Simplifying Student Life",
+    description: "Your all-in-one platform for academic success, housing, and campus life",
+    images: [
+      {
+        url: "/logo.svg",
+        width: 64,
+        height: 64,
+        alt: "UniEase Logo",
+      },
+    ],
+  },
 };
 
 export default function RootLayout({
