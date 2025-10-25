@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/providers/AuthProvider";
+import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,8 +17,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "UniEase - Simplifying Student Life",
   description: "Your all-in-one platform for academic success, housing, and campus life",
+  manifest: "/manifest.json",
   icons: [
+    { rel: "icon", url: "/favicon.ico", sizes: "any" },
     { rel: "icon", url: "/logo.svg", type: "image/svg+xml" },
+    { rel: "shortcut icon", url: "/favicon.ico" },
     { rel: "apple-touch-icon", url: "/logo.svg" },
   ],
   openGraph: {
@@ -32,6 +36,22 @@ export const metadata: Metadata = {
       },
     ],
   },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "UniEase",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: "#155DFF",
 };
 
 export default function RootLayout({
@@ -46,6 +66,7 @@ export default function RootLayout({
       >
         <AuthProvider>
           {children}
+          <PWAInstallPrompt />
         </AuthProvider>
       </body>
     </html>
