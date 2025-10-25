@@ -76,6 +76,13 @@ export default function AcademicsDashboard() {
   const [showAddAssignmentModal, setShowAddAssignmentModal] = useState(false);
   const [showUpdateProgressModal, setShowUpdateProgressModal] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [studyStats, setStudyStats] = useState({
+    today: { hours: 0, sessionCount: 0 },
+    week: { hours: 0, sessionCount: 0 },
+    month: { hours: 0, sessionCount: 0 },
+    streak: 0,
+    recentSessions: []
+  });
   const { data: session, isPending } = useSession();
   const router = useRouter();
 
@@ -96,6 +103,10 @@ export default function AcademicsDashboard() {
       // Fetch notifications from database
       const notificationsResponse = await fetch(`/api/notifications?userId=${session.user.id}`);
       const notificationsData = await notificationsResponse.json();
+
+      // Fetch study stats from database
+      const studyStatsResponse = await fetch(`/api/study-hours/stats?userId=${session.user.id}`);
+      const studyStatsData = await studyStatsResponse.json();
 
       // Transform courses data to include colors and progress
       const transformedCourses = coursesData.courses?.map((course: any, index: number) => ({
@@ -141,6 +152,21 @@ export default function AcademicsDashboard() {
       setCourses(transformedCourses);
       setAssignments(transformedAssignments);
       setNotifications(transformedNotifications);
+      
+      // Update study stats
+      if (studyStatsData.success && studyStatsData.stats) {
+        console.log("Study stats data:", studyStatsData.stats);
+        console.log("Recent sessions:", studyStatsData.stats.recentSessions);
+        setStudyStats({
+          today: studyStatsData.stats.today || { hours: 0, sessionCount: 0 },
+          week: studyStatsData.stats.week || { hours: 0, sessionCount: 0 },
+          month: studyStatsData.stats.month || { hours: 0, sessionCount: 0 },
+          streak: studyStatsData.stats.streak || 0,
+          recentSessions: studyStatsData.stats.recentSessions || []
+        });
+      } else {
+        console.log("Study stats API response:", studyStatsData);
+      }
     } catch (error) {
       console.error("Error fetching academic data:", error);
       // Fallback to empty arrays if API fails
@@ -500,11 +526,11 @@ export default function AcademicsDashboard() {
                           <p className="text-sm text-gray-600">Track your study progress</p>
                         </div>
                         <div className="text-right">
-                          <div className="text-3xl font-bold text-green-600">2.5h</div>
-                          <div className="text-sm text-gray-500">of 4h goal</div>
+                          <div className="text-3xl font-bold text-green-600">{studyStats.today?.hours || 0}h</div>
+                          <div className="text-sm text-gray-500">studied today</div>
                         </div>
                       </div>
-                      <Progress value={62.5} className="w-full h-3 mb-4" />
+                      <Progress value={Math.min(((studyStats.today?.hours || 0) / 4) * 100, 100)} className="w-full h-3 mb-4" />
                       <div className="flex items-center justify-between">
                         <Button 
                           size="sm" 
@@ -517,11 +543,11 @@ export default function AcademicsDashboard() {
                         <div className="flex items-center space-x-4 text-sm text-gray-600">
                           <span className="flex items-center">
                             <Zap className="h-4 w-4 mr-1 text-yellow-500" />
-                            3 day streak
+                            {studyStats.streak || 0} day streak
                           </span>
                           <span className="flex items-center">
                             <Target className="h-4 w-4 mr-1 text-blue-500" />
-                            12h this week
+                            {studyStats.week?.hours || 0}h this week
                           </span>
                         </div>
                       </div>
@@ -530,28 +556,48 @@ export default function AcademicsDashboard() {
                     {/* Study Sessions */}
                     <div className="space-y-3">
                       <h4 className="font-semibold text-gray-900">Recent Sessions</h4>
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                            <span className="text-sm font-medium">Mathematics</span>
+                      <div className="space-y-2 max-h-32 overflow-y-auto">
+                        {studyStats.recentSessions && studyStats.recentSessions.length > 0 ? (
+                          studyStats.recentSessions.slice(0, 3).map((session, index) => {
+                            const colors = ['bg-green-500', 'bg-blue-500', 'bg-purple-500'];
+                            const formatDuration = (minutes: number) => {
+                              const hours = Math.floor(minutes / 60);
+                              const mins = minutes % 60;
+                              return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+                            };
+                            const formatDate = (date: string | Date) => {
+                              const sessionDate = new Date(date);
+                              const now = new Date();
+                              const diffTime = Math.abs(now.getTime() - sessionDate.getTime());
+                              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                              
+                              if (diffDays === 1) return 'Today';
+                              if (diffDays === 2) return 'Yesterday';
+                              if (diffDays <= 7) return `${diffDays - 1} days ago`;
+                              return sessionDate.toLocaleDateString();
+                            };
+                            return (
+                              <div key={session.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                                <div className="flex items-center space-x-3">
+                                  <div className={`w-2 h-2 ${colors[index % colors.length]} rounded-full`}></div>
+                                  <div className="flex-1">
+                                    <span className="text-sm font-medium text-gray-900">{session.topic}</span>
+                                    <p className="text-xs text-gray-500">{formatDate(session.createdAt)}</p>
+                                  </div>
+                                </div>
+                                <div className="text-sm text-gray-600 font-medium">{formatDuration(session.duration)}</div>
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <div className="text-center py-6 text-gray-500">
+                            <div className="mb-2">
+                              <Brain className="h-8 w-8 mx-auto text-gray-300" />
+                            </div>
+                            <p className="text-sm">No recent study sessions</p>
+                            <p className="text-xs text-gray-400 mt-1">Start a session to see it here</p>
                           </div>
-                          <div className="text-sm text-gray-600">1h 30m</div>
-                        </div>
-                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                            <span className="text-sm font-medium">Physics</span>
-                          </div>
-                          <div className="text-sm text-gray-600">1h 15m</div>
-                        </div>
-                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                            <span className="text-sm font-medium">Computer Science</span>
-                          </div>
-                          <div className="text-sm text-gray-600">45m</div>
-                        </div>
+                        )}
                       </div>
                     </div>
                   </div>

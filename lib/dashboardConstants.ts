@@ -22,7 +22,8 @@ import {
   Timer,
   BookMarked,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Bot
 } from "lucide-react";
 
 export interface Course {
@@ -114,6 +115,13 @@ export const sidebarItems: SidebarItem[] = [
         icon: BookMarked,
         href: "/dashboard/academics/resources",
         isActive: false
+      },
+      {
+        id: "ai-assistant",
+        label: "AI Assistant",
+        icon: Bot,
+        href: "/dashboard/academics/ai-assistant",
+        isActive: false
       }
     ]
   },
@@ -137,14 +145,6 @@ export const sidebarItems: SidebarItem[] = [
     icon: Heart,
     href: "/dashboard/health",
     isActive: false
-  },
-  {
-    id: "ai-assistant",
-    label: "AI Assistant",
-    icon: Brain,
-    href: "/dashboard/academics/ai-assistant",
-    isActive: false,
-    badge: "New"
   }
 ];
 

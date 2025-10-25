@@ -8,6 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   BookMarked,
   Download,
   Brain,
@@ -68,149 +75,35 @@ export default function ResourcesPage() {
   const [selectedCourse, setSelectedCourse] = useState("all");
   const [selectedType, setSelectedType] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [selectedQuestion, setSelectedQuestion] = useState<PastQuestion | null>(null);
   const { data: session, isPending } = useSession();
   const router = useRouter();
-
-  // Mock data for past questions
-  const mockPastQuestions: PastQuestion[] = [
-    {
-      id: "1",
-      title: "Artificial Intelligence Final Exam 2024",
-      course: "Artificial Intelligence",
-      courseCode: "CSE 401",
-      year: "2024",
-      semester: "Fall",
-      type: "final",
-      difficulty: "hard",
-      pages: 8,
-      downloads: 156,
-      rating: 4.8,
-      uploadedBy: "Dr. Smith",
-      uploadedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-      fileSize: "2.4 MB",
-      description: "Comprehensive final exam covering machine learning, neural networks, and AI algorithms.",
-      tags: ["machine-learning", "neural-networks", "algorithms"]
-    },
-    {
-      id: "2",
-      title: "Real Analysis Midterm 2024",
-      course: "Real Analysis",
-      courseCode: "MTH 303",
-      year: "2024",
-      semester: "Fall",
-      type: "midterm",
-      difficulty: "medium",
-      pages: 6,
-      downloads: 89,
-      rating: 4.5,
-      uploadedBy: "Prof. Johnson",
-      uploadedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-      fileSize: "1.8 MB",
-      description: "Midterm exam focusing on limits, continuity, and differentiation.",
-      tags: ["calculus", "limits", "continuity"]
-    },
-    {
-      id: "3",
-      title: "Physics II Quiz Collection 2024",
-      course: "Physics II",
-      courseCode: "PHY 201",
-      year: "2024",
-      semester: "Fall",
-      type: "quiz",
-      difficulty: "easy",
-      pages: 12,
-      downloads: 234,
-      rating: 4.2,
-      uploadedBy: "Dr. Brown",
-      uploadedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-      fileSize: "3.1 MB",
-      description: "Collection of weekly quizzes covering electromagnetism and thermodynamics.",
-      tags: ["electromagnetism", "thermodynamics", "quiz"]
-    },
-    {
-      id: "4",
-      title: "Computer Architecture Assignment 2024",
-      course: "Computer Architecture",
-      courseCode: "CSE 501",
-      year: "2024",
-      semester: "Fall",
-      type: "assignment",
-      difficulty: "hard",
-      pages: 4,
-      downloads: 67,
-      rating: 4.6,
-      uploadedBy: "Prof. Davis",
-      uploadedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
-      fileSize: "1.2 MB",
-      description: "Assignment on CPU design and memory hierarchy.",
-      tags: ["cpu-design", "memory", "architecture"]
-    },
-    {
-      id: "5",
-      title: "Data Structures Final Exam 2023",
-      course: "Data Structures",
-      courseCode: "CSE 301",
-      year: "2023",
-      semester: "Spring",
-      type: "final",
-      difficulty: "medium",
-      pages: 10,
-      downloads: 312,
-      rating: 4.7,
-      uploadedBy: "Dr. Wilson",
-      uploadedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-      fileSize: "2.8 MB",
-      description: "Final exam covering all data structures and algorithms taught in the course.",
-      tags: ["data-structures", "algorithms", "programming"]
-    }
-  ];
-
-  // Mock data for AI questions
-  const mockAIQuestions: AIQuestion[] = [
-    {
-      id: "1",
-      question: "What is the difference between supervised and unsupervised learning?",
-      answer: "Supervised learning uses labeled training data to learn a mapping from inputs to outputs, while unsupervised learning finds hidden patterns in data without labeled examples.",
-      course: "Artificial Intelligence",
-      difficulty: "medium",
-      category: "Machine Learning",
-      timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000),
-      isBookmarked: true
-    },
-    {
-      id: "2",
-      question: "How do you calculate the derivative of a composite function?",
-      answer: "Use the chain rule: if f(x) = g(h(x)), then f'(x) = g'(h(x)) * h'(x).",
-      course: "Calculus",
-      difficulty: "easy",
-      category: "Derivatives",
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-      isBookmarked: false
-    },
-    {
-      id: "3",
-      question: "What is Ohm's Law and how is it applied in circuits?",
-      answer: "Ohm's Law states that V = IR, where V is voltage, I is current, and R is resistance. It's fundamental for analyzing electrical circuits.",
-      course: "Physics",
-      difficulty: "easy",
-      category: "Electricity",
-      timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000),
-      isBookmarked: true
-    }
-  ];
 
   const fetchResourcesData = useCallback(async () => {
     if (!session?.user?.id) return;
     
     try {
       setLoading(true);
-      // TODO: Replace with actual API calls
-      // const pastQuestionsResponse = await fetch(`/api/past-questions?userId=${session.user.id}`);
-      // const aiQuestionsResponse = await fetch(`/api/ai-questions?userId=${session.user.id}`);
+      // Fetch past questions from API
+      const pastQuestionsResponse = await fetch(`/api/past-questions?userId=${session.user.id}`);
+      if (pastQuestionsResponse.ok) {
+        const pastQuestionsData = await pastQuestionsResponse.json();
+        setPastQuestions(pastQuestionsData.questions || []);
+      } else {
+        console.log('No past questions found, using empty array');
+        setPastQuestions([]);
+      }
       
-      // Using mock data for now
-      setPastQuestions(mockPastQuestions);
-      setAiQuestions(mockAIQuestions);
+      // Fetch AI questions from API
+      const aiQuestionsResponse = await fetch(`/api/ai-questions?userId=${session.user.id}`);
+      if (aiQuestionsResponse.ok) {
+        const aiQuestionsData = await aiQuestionsResponse.json();
+        setAiQuestions(aiQuestionsData.questions || []);
+      } else {
+        console.log('No AI questions found, using empty array');
+        setAiQuestions([]);
+      }
     } catch (error) {
       console.error("Error fetching resources data:", error);
     } finally {
@@ -230,10 +123,15 @@ export default function ResourcesPage() {
     }
   }, [session, fetchResourcesData]);
 
+  const handlePreviewQuestion = (question: PastQuestion) => {
+    setSelectedQuestion(question);
+    setShowPreviewModal(true);
+  };
+
   const filteredPastQuestions = pastQuestions.filter(question => {
     const matchesSearch = question.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          question.course.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         question.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+                         (question.tags && question.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())));
     const matchesCourse = selectedCourse === "all" || question.courseCode === selectedCourse;
     const matchesType = selectedType === "all" || question.type === selectedType;
     return matchesSearch && matchesCourse && matchesType;
@@ -388,11 +286,17 @@ export default function ResourcesPage() {
                                 {question.description}
                               </p>
                               <div className="flex flex-wrap gap-2 mb-3">
-                                {question.tags.map((tag, index) => (
-                                  <Badge key={index} variant="outline" className="text-xs">
-                                    {tag}
+                                {question.tags && question.tags.length > 0 ? (
+                                  question.tags.map((tag, index) => (
+                                    <Badge key={index} variant="outline" className="text-xs">
+                                      {tag}
+                                    </Badge>
+                                  ))
+                                ) : (
+                                  <Badge variant="outline" className="text-xs">
+                                    General
                                   </Badge>
-                                ))}
+                                )}
                               </div>
                             </div>
                             <div className="text-right">
@@ -418,13 +322,17 @@ export default function ResourcesPage() {
                               </span>
                               <span className="flex items-center">
                                 <Clock className="h-4 w-4 mr-1" />
-                                {question.uploadedAt.toLocaleDateString()}
+                                {question.uploadedAt ? question.uploadedAt.toLocaleDateString() : 'Unknown date'}
                               </span>
                             </div>
-                            <div className="flex space-x-2">
-                              <Button size="sm" variant="outline">
-                                <Eye className="h-4 w-4 mr-2" />
-                                Preview
+                              <div className="flex space-x-2">
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => handlePreviewQuestion(question)}
+                                >
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  Preview
                               </Button>
                               <Button size="sm" className="bg-purple-600 hover:bg-purple-700">
                                 <Download className="h-4 w-4 mr-2" />
@@ -486,7 +394,7 @@ export default function ResourcesPage() {
                             </div>
                             <div className="flex items-center justify-between text-xs text-gray-500">
                               <span>{question.course}</span>
-                              <span>{question.timestamp.toLocaleTimeString()}</span>
+                              <span>{question.timestamp ? question.timestamp.toLocaleTimeString() : 'Unknown time'}</span>
                             </div>
                           </div>
                         ))}
@@ -547,6 +455,120 @@ export default function ResourcesPage() {
           </div>
         </main>
       </div>
+
+      {/* Preview Modal */}
+      <Dialog open={showPreviewModal} onOpenChange={setShowPreviewModal}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-gray-900">
+              {selectedQuestion?.title}
+            </DialogTitle>
+            <DialogDescription className="text-gray-600">
+              {selectedQuestion?.courseCode} - {selectedQuestion?.course}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedQuestion && (
+            <div className="space-y-6">
+              {/* Question Details */}
+              <div className="bg-gray-50 rounded-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-white rounded-lg">
+                      {getTypeIcon(selectedQuestion.type)}
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-gray-900 text-lg">
+                        {selectedQuestion.title}
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        {selectedQuestion.courseCode} - {selectedQuestion.course}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <Star className="h-4 w-4 text-yellow-500" />
+                      <span className="text-sm font-medium">{selectedQuestion.rating}</span>
+                    </div>
+                    <Badge className={`text-xs ${getDifficultyColor(selectedQuestion.difficulty)}`}>
+                      {selectedQuestion.difficulty}
+                    </Badge>
+                  </div>
+                </div>
+                
+                <p className="text-sm text-gray-700 mb-4">
+                  {selectedQuestion.description}
+                </p>
+                
+                {/* Tags */}
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {selectedQuestion.tags && selectedQuestion.tags.length > 0 ? (
+                    selectedQuestion.tags.map((tag, index) => (
+                      <Badge key={index} variant="outline" className="text-xs">
+                        {tag}
+                      </Badge>
+                    ))
+                  ) : (
+                    <Badge variant="outline" className="text-xs">
+                      General
+                    </Badge>
+                  )}
+                </div>
+                
+                {/* Question Stats */}
+                <div className="grid grid-cols-3 gap-4 text-sm text-gray-600">
+                  <div className="flex items-center">
+                    <Download className="h-4 w-4 mr-1" />
+                    {selectedQuestion.downloads} downloads
+                  </div>
+                  <div className="flex items-center">
+                    <FileText className="h-4 w-4 mr-1" />
+                    {selectedQuestion.pages} pages
+                  </div>
+                  <div className="flex items-center">
+                    <Clock className="h-4 w-4 mr-1" />
+                    {selectedQuestion.uploadedAt ? selectedQuestion.uploadedAt.toLocaleDateString() : 'Unknown date'}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Question Content Preview */}
+              <div className="bg-white border rounded-lg p-6">
+                <h4 className="font-semibold text-gray-900 mb-4">Question Preview</h4>
+                <div className="prose max-w-none">
+                  <p className="text-gray-700 leading-relaxed">
+                    This is a preview of the past question content. The full question paper would be displayed here 
+                    with all the questions, diagrams, and answer spaces. This gives you a comprehensive view of 
+                    what to expect from this particular exam paper.
+                  </p>
+                  <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                    <p className="text-sm text-blue-800">
+                      <strong>Note:</strong> This is a sample preview. The actual question paper would contain 
+                      the complete set of questions from the {selectedQuestion.year} {selectedQuestion.semester} 
+                      {selectedQuestion.type} examination.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Action Buttons */}
+              <div className="flex justify-end space-x-3 pt-4 border-t">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowPreviewModal(false)}
+                >
+                  Close
+                </Button>
+                <Button className="bg-purple-600 hover:bg-purple-700">
+                  <Download className="h-4 w-4 mr-2" />
+                  Download Full Paper
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

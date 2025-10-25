@@ -1,411 +1,284 @@
 "use client";
 
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import {
-  Brain,
-  Send,
-  Download,
-  FileText,
-  BookOpen,
-  Lightbulb,
-  Target,
-  TrendingUp,
-  Clock,
-  Star,
-  ChevronRight,
-  Sparkles,
-  MessageCircle,
-  Zap
-} from "lucide-react";
+import { useState, useEffect } from "react";
+import { useSession } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
 import { DashboardHeader } from "@/components/DashboardHeader";
-
-const studyTopics = [
-  {
-    id: 1,
-    title: "Newton's Laws of Motion",
-    subject: "Physics 101",
-    difficulty: "Intermediate",
-    timeEstimate: "15 min",
-    progress: 75,
-    color: "bg-blue-500"
-  },
-  {
-    id: 2,
-    title: "Data Structures & Algorithms",
-    subject: "CSE 201",
-    difficulty: "Advanced",
-    timeEstimate: "25 min",
-    progress: 60,
-    color: "bg-green-500"
-  },
-  {
-    id: 3,
-    title: "Organic Chemistry Reactions",
-    subject: "CHM 201",
-    difficulty: "Hard",
-    timeEstimate: "20 min",
-    progress: 40,
-    color: "bg-purple-500"
-  },
-  {
-    id: 4,
-    title: "Calculus Derivatives",
-    subject: "MTH 101",
-    difficulty: "Intermediate",
-    timeEstimate: "18 min",
-    progress: 90,
-    color: "bg-orange-500"
-  }
-];
-
-const recentSessions = [
-  {
-    id: 1,
-    topic: "Newton's Laws of Motion",
-    duration: "15 min",
-    score: 85,
-    completedAt: "2 hours ago",
-    subject: "Physics 101"
-  },
-  {
-    id: 2,
-    topic: "Data Structures",
-    duration: "22 min",
-    score: 78,
-    completedAt: "1 day ago",
-    subject: "CSE 201"
-  },
-  {
-    id: 3,
-    topic: "Organic Chemistry",
-    duration: "18 min",
-    score: 92,
-    completedAt: "2 days ago",
-    subject: "CHM 201"
-  }
-];
-
-const aiFeatures = [
-  {
-    title: "Personalized Study Plans",
-    description: "AI creates custom study schedules based on your learning patterns",
-    icon: Target,
-    color: "bg-blue-500"
-  },
-  {
-    title: "Smart Question Generation",
-    description: "Generate practice questions tailored to your course material",
-    icon: Lightbulb,
-    color: "bg-green-500"
-  },
-  {
-    title: "Progress Tracking",
-    description: "Monitor your learning progress with detailed analytics",
-    icon: TrendingUp,
-    color: "bg-purple-500"
-  },
-  {
-    title: "Instant Explanations",
-    description: "Get detailed explanations for complex topics instantly",
-    icon: MessageCircle,
-    color: "bg-orange-500"
-  }
-];
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+  Bot,
+  Send,
+  MessageCircle,
+  Lightbulb,
+  BookOpen,
+  Calculator,
+  Code,
+  FileText,
+  Sparkles,
+  Brain,
+  Zap,
+  Target
+} from "lucide-react";
 
 export default function AIAssistantPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [currentTopic, setCurrentTopic] = useState(studyTopics[0]);
-  const [question, setQuestion] = useState("");
-  const [chatHistory, setChatHistory] = useState([
-    {
-      id: 1,
-      type: "user",
-      message: "Can you explain the first law in simpler terms?",
-      timestamp: "2 hours ago"
-    },
-    {
-      id: 2,
-      type: "ai",
-      message: "Of course! Think of it like this: if you slide a book across a table, it eventually stops because of friction, which is an external force. But if you were in space and pushed the same book, it would keep going forever in a straight line at the same speed because there's no friction or air to slow it down. That's the law of inertia in action!",
-      timestamp: "2 hours ago"
-    }
-  ]);
+  const [message, setMessage] = useState("");
+  const [messages, setMessages] = useState<Array<{
+    id: string;
+    text: string;
+    isUser: boolean;
+    timestamp: Date;
+  }>>([]);
+  const [isTyping, setIsTyping] = useState(false);
+  const { data: session, isPending } = useSession();
+  const router = useRouter();
 
-  const handleSendQuestion = () => {
-    if (!question.trim()) return;
-    
-    const newMessage = {
-      id: chatHistory.length + 1,
-      type: "user" as const,
-      message: question,
-      timestamp: "Just now"
+  useEffect(() => {
+    if (!isPending && !session) {
+      router.push("/login");
+    }
+  }, [session, isPending, router]);
+
+  const handleSendMessage = async () => {
+    if (!message.trim()) return;
+
+    const userMessage = {
+      id: Date.now().toString(),
+      text: message,
+      isUser: true,
+      timestamp: new Date()
     };
-    
-    setChatHistory(prev => [...prev, newMessage]);
-    setQuestion("");
-    
+
+    setMessages(prev => [...prev, userMessage]);
+    setMessage("");
+    setIsTyping(true);
+
     // Simulate AI response
     setTimeout(() => {
       const aiResponse = {
-        id: chatHistory.length + 2,
-        type: "ai" as const,
-        message: "That's a great question! Let me break that down for you in a way that's easy to understand...",
-        timestamp: "Just now"
+        id: (Date.now() + 1).toString(),
+        text: "I'm here to help you with your academic questions! This is a prototype version. In the full version, I'll be able to help you with course materials, study strategies, problem-solving, and more. What would you like to know?",
+        isUser: false,
+        timestamp: new Date()
       };
-      setChatHistory(prev => [...prev, aiResponse]);
-    }, 1000);
+      setMessages(prev => [...prev, aiResponse]);
+      setIsTyping(false);
+    }, 1500);
   };
 
+  const quickActions = [
+    {
+      id: "math-help",
+      title: "Math Problem Solver",
+      description: "Get step-by-step solutions",
+      icon: Calculator,
+      color: "bg-blue-500"
+    },
+    {
+      id: "essay-help",
+      title: "Essay Writing Assistant",
+      description: "Improve your writing",
+      icon: FileText,
+      color: "bg-green-500"
+    },
+    {
+      id: "code-help",
+      title: "Coding Assistant",
+      description: "Debug and explain code",
+      icon: Code,
+      color: "bg-purple-500"
+    },
+    {
+      id: "study-tips",
+      title: "Study Strategies",
+      description: "Personalized study plans",
+      icon: Target,
+      color: "bg-orange-500"
+    }
+  ];
+
+  if (isPending) {
+    return (
+      <div className="flex h-screen bg-gray-50">
+        <div className="flex-1 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Sidebar */}
-      <DashboardSidebar 
-        isOpen={sidebarOpen} 
-        onClose={() => setSidebarOpen(false)} 
-      />
-
-      {/* Main Content */}
-      <div className="lg:ml-64">
-        {/* Header */}
-        <DashboardHeader
-          onMenuClick={() => setSidebarOpen(true)}
+    <div className="flex h-screen bg-gray-50">
+      <DashboardSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <DashboardHeader 
+          onMenuClick={() => setSidebarOpen(true)} 
           title="AI Study Assistant"
-          subtitle="Your personalized learning companion powered by AI"
+          subtitle="Your intelligent companion for academic success"
         />
-
-        {/* Main Content */}
-        <main className="p-4 lg:p-6">
-          <div className="max-w-7xl mx-auto">
-            {/* Hero Section */}
-            <div className="text-center mb-8">
-              <div className="flex items-center justify-center mb-4">
-                <div className="p-4 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl">
-                  <Brain className="h-12 w-12 text-white" />
+        
+        <main className="flex-1 overflow-y-auto p-6">
+          <div className="max-w-6xl mx-auto">
+            {/* Header */}
+            <div className="mb-8">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="p-3 bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl">
+                  <Bot className="h-8 w-8 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900">AI Study Assistant</h1>
+                  <p className="text-gray-600">Your intelligent companion for academic success</p>
                 </div>
               </div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-4">
-                AI Study Assistant
-              </h1>
-              <p className="text-xl text-gray-600 mb-8">
-                Get personalized help with your studies using advanced AI
-              </p>
+              <Badge className="bg-gradient-to-r from-purple-100 to-blue-100 text-purple-800 border-purple-200">
+                <Sparkles className="h-3 w-3 mr-1" />
+                Prototype Version
+              </Badge>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Left Column - Study Topics */}
-              <div className="space-y-6">
-                {/* Current Topic */}
-                <Card>
-                  <CardHeader>
+              {/* Chat Interface */}
+              <div className="lg:col-span-2">
+                <Card className="h-[600px] flex flex-col pt-0">
+                  <CardHeader className="bg-gradient-to-r from-purple-50 to-blue-50 border-b !py-5">
                     <CardTitle className="flex items-center space-x-2">
-                      <BookOpen className="h-5 w-5 text-blue-600" />
-                      <span>Current Topic</span>
+                      <MessageCircle className="h-5 w-5 text-purple-600" />
+                      <span>Chat with AI Assistant</span>
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200">
-                        <h3 className="font-bold text-gray-900 mb-2">{currentTopic.title}</h3>
-                        <p className="text-sm text-gray-600 mb-3">{currentTopic.subject}</p>
-                        <div className="flex items-center justify-between mb-3">
-                          <Badge variant="outline" className="text-xs">
-                            {currentTopic.difficulty}
-                          </Badge>
-                          <div className="flex items-center space-x-1 text-sm text-gray-600">
-                            <Clock className="h-4 w-4" />
-                            <span>{currentTopic.timeEstimate}</span>
-                          </div>
+                  <CardContent className="flex-1 flex flex-col p-0">
+                    {/* Messages */}
+                    <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-4">
+                      {messages.length === 0 ? (
+                        <div className="text-center text-gray-500 pt-4">
+                          <Bot className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                          <p>Start a conversation with your AI study assistant!</p>
+                          <p className="text-sm mt-2">Ask questions about your courses, get study tips, or request help with assignments.</p>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
-                            className={`h-2 rounded-full ${currentTopic.color}`}
-                            style={{ width: `${currentTopic.progress}%` }}
-                          ></div>
-                        </div>
-                        <p className="text-xs text-gray-600 mt-2">{currentTopic.progress}% Complete</p>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-2">
-                        <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
-                          <Download className="h-4 w-4 mr-2" />
-                          Download PDF
-                        </Button>
-                        <Button variant="outline" className="w-full">
-                          <FileText className="h-4 w-4 mr-2" />
-                          View Notes
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Study Topics */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center space-x-2">
-                      <Target className="h-5 w-5 text-green-600" />
-                      <span>Study Topics</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {studyTopics.map((topic) => (
-                        <div
-                          key={topic.id}
-                          className={`p-3 rounded-lg border cursor-pointer transition-all duration-200 hover:shadow-md ${
-                            currentTopic.id === topic.id 
-                              ? 'border-blue-500 bg-blue-50' 
-                              : 'border-gray-200 hover:border-gray-300'
-                          }`}
-                          onClick={() => setCurrentTopic(topic)}
-                        >
-                          <div className="flex items-center justify-between mb-2">
-                            <h4 className="font-semibold text-gray-900 text-sm">{topic.title}</h4>
-                            <div className="flex items-center space-x-1">
-                              <Star className="h-3 w-3 text-yellow-400 fill-current" />
-                              <span className="text-xs text-gray-600">{topic.progress}%</span>
+                      ) : (
+                        messages.map((msg) => (
+                          <div
+                            key={msg.id}
+                            className={`flex ${msg.isUser ? 'justify-end' : 'justify-start'}`}
+                          >
+                            <div
+                              className={`max-w-[80%] rounded-lg p-3 ${
+                                msg.isUser
+                                  ? 'bg-blue-500 text-white'
+                                  : 'bg-gray-100 text-gray-900'
+                              }`}
+                            >
+                              <p className="text-sm">{msg.text}</p>
+                              <p className={`text-xs mt-1 ${
+                                msg.isUser ? 'text-blue-100' : 'text-gray-500'
+                              }`}>
+                                {msg.timestamp.toLocaleTimeString()}
+                              </p>
                             </div>
                           </div>
-                          <p className="text-xs text-gray-600 mb-2">{topic.subject}</p>
-                          <div className="flex items-center justify-between">
-                            <Badge variant="outline" className="text-xs">
-                              {topic.difficulty}
-                            </Badge>
-                            <span className="text-xs text-gray-500">{topic.timeEstimate}</span>
+                        ))
+                      )}
+                      
+                      {isTyping && (
+                        <div className="flex justify-start">
+                          <div className="bg-gray-100 rounded-lg p-3">
+                            <div className="flex space-x-1">
+                              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                            </div>
                           </div>
                         </div>
-                      ))}
+                      )}
+                    </div>
+
+                    {/* Input */}
+                    <div className="border-t p-4">
+                      <div className="flex space-x-2">
+                        <Input
+                          value={message}
+                          onChange={(e) => setMessage(e.target.value)}
+                          placeholder="Ask me anything about your studies..."
+                          onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                          className="flex-1"
+                        />
+                        <Button
+                          onClick={handleSendMessage}
+                          disabled={!message.trim() || isTyping}
+                          className="bg-purple-600 hover:bg-purple-700"
+                        >
+                          <Send className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
               </div>
 
-              {/* Right Column - Chat Interface */}
-              <div className="lg:col-span-2 space-y-6">
-                {/* AI Features */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {aiFeatures.map((feature, index) => {
-                    const IconComponent = feature.icon;
-                    return (
-                      <Card key={index} className="group hover:shadow-lg transition-all duration-300">
-                        <CardContent className="p-4">
-                          <div className="flex items-start space-x-3">
-                            <div className={`p-2 rounded-lg ${feature.color} text-white`}>
-                              <IconComponent className="h-5 w-5" />
-                            </div>
-                            <div>
-                              <h3 className="font-semibold text-gray-900 text-sm mb-1">
-                                {feature.title}
-                              </h3>
-                              <p className="text-xs text-gray-600">
-                                {feature.description}
-                              </p>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-
-                {/* Chat Interface */}
-                <Card className="h-96">
-                  <CardHeader>
-                    <CardTitle className="flex items-center space-x-2">
-                      <MessageCircle className="h-5 w-5 text-blue-600" />
-                      <span>Ask AI Assistant</span>
-                      <Badge variant="secondary" className="ml-auto">
-                        <Sparkles className="h-3 w-3 mr-1" />
-                        AI Powered
-                      </Badge>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="h-full flex flex-col">
-                    {/* Chat Messages */}
-                    <div className="flex-1 overflow-y-auto space-y-4 mb-4">
-                      {chatHistory.map((message) => (
-                        <div
-                          key={message.id}
-                          className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-                        >
-                          <div
-                            className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                              message.type === 'user'
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-100 text-gray-900'
-                            }`}
-                          >
-                            <p className="text-sm">{message.message}</p>
-                            <p className="text-xs opacity-70 mt-1">{message.timestamp}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Input Area */}
-                    <div className="flex space-x-2">
-                      <Textarea
-                        placeholder="Ask a follow-up question to deepen your understanding..."
-                        value={question}
-                        onChange={(e) => setQuestion(e.target.value)}
-                        className="flex-1 min-h-12 resize-none"
-                        onKeyPress={(e) => {
-                          if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            handleSendQuestion();
-                          }
-                        }}
-                      />
-                      <Button
-                        onClick={handleSendQuestion}
-                        disabled={!question.trim()}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4"
-                      >
-                        <Send className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Recent Sessions */}
+              {/* Quick Actions */}
+              <div className="space-y-6">
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center space-x-2">
-                      <TrendingUp className="h-5 w-5 text-green-600" />
-                      <span>Recent Study Sessions</span>
+                      <Zap className="h-5 w-5 text-yellow-500" />
+                      <span>Quick Actions</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {quickActions.map((action) => {
+                      const IconComponent = action.icon;
+                      return (
+                        <Button
+                          key={action.id}
+                          variant="outline"
+                          className="w-full justify-start h-auto p-4 hover:bg-gray-50"
+                        >
+                          <div className="flex items-center space-x-3">
+                            <div className={`p-2 rounded-lg ${action.color}`}>
+                              <IconComponent className="h-4 w-4 text-white" />
+                            </div>
+                            <div className="text-left">
+                              <p className="font-medium text-sm">{action.title}</p>
+                              <p className="text-xs text-gray-500">{action.description}</p>
+                            </div>
+                          </div>
+                        </Button>
+                      );
+                    })}
+                  </CardContent>
+                </Card>
+
+                {/* Features Preview */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center space-x-2">
+                      <Brain className="h-5 w-5 text-blue-500" />
+                      <span>Coming Soon</span>
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      {recentSessions.map((session) => (
-                        <div
-                          key={session.id}
-                          className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                        >
-                          <div className="flex-1">
-                            <h4 className="font-semibold text-gray-900 text-sm">
-                              {session.topic}
-                            </h4>
-                            <p className="text-xs text-gray-600">{session.subject}</p>
-                          </div>
-                          <div className="flex items-center space-x-4 text-sm text-gray-600">
-                            <div className="flex items-center space-x-1">
-                              <Clock className="h-4 w-4" />
-                              <span>{session.duration}</span>
-                            </div>
-                            <div className="flex items-center space-x-1">
-                              <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                              <span>{session.score}%</span>
-                            </div>
-                            <span className="text-xs">{session.completedAt}</span>
-                          </div>
-                        </div>
-                      ))}
+                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                        <BookOpen className="h-4 w-4" />
+                        <span>Course-specific help</span>
+                      </div>
+                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                        <Lightbulb className="h-4 w-4" />
+                        <span>Study strategy recommendations</span>
+                      </div>
+                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                        <FileText className="h-4 w-4" />
+                        <span>Assignment assistance</span>
+                      </div>
+                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                        <Target className="h-4 w-4" />
+                        <span>Personalized learning paths</span>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

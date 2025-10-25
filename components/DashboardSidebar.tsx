@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { useSession, signOut } from "@/lib/auth-client";
@@ -39,6 +39,17 @@ export function DashboardSidebar({ isOpen, onClose }: DashboardSidebarProps) {
   const hasActiveSubItem = (subItems: any[]) => {
     return subItems?.some(subItem => isActive(subItem.href)) || false;
   };
+
+  // Auto-expand items with active sub-items
+  useEffect(() => {
+    const itemsToExpand: string[] = [];
+    sidebarItems.forEach(item => {
+      if (item.subItems && hasActiveSubItem(item.subItems)) {
+        itemsToExpand.push(item.id);
+      }
+    });
+    setExpandedItems(itemsToExpand);
+  }, [pathname]);
 
   // Get user initials from name
   const getUserInitials = (name: string) => {
@@ -113,38 +124,58 @@ export function DashboardSidebar({ isOpen, onClose }: DashboardSidebarProps) {
                   {/* Main Item */}
                   <div className="space-y-1">
                     {hasSubItems ? (
-                      <button
-                        onClick={() => toggleExpanded(item.id)}
-                        className={cn(
-                          "w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group",
-                          active || hasActiveSub
-                            ? "bg-blue-50 text-blue-700"
-                            : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                        )}
-                      >
-                        <div className={cn(
-                          "p-1.5 rounded-md transition-colors",
-                          active || hasActiveSub
-                            ? "bg-blue-100 text-blue-600"
-                            : "text-gray-400 group-hover:text-gray-600"
-                        )}>
-                          <IconComponent className="h-4 w-4" />
-                        </div>
-                        <span className="flex-1 text-left">{item.label}</span>
-                        {item.badge && (
-                          <Badge 
-                            variant="secondary" 
-                            className="text-xs bg-blue-100 text-blue-700 hover:bg-blue-200"
-                          >
-                            {item.badge}
-                          </Badge>
-                        )}
-                        {isExpanded ? (
-                          <ChevronDown className="h-4 w-4 text-gray-400" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4 text-gray-400" />
-                        )}
-                      </button>
+                      <div className="flex items-center">
+                        {/* Main item as link */}
+                        <Link
+                          href={item.href}
+                          className={cn(
+                            "flex-1 flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group",
+                            active || hasActiveSub
+                              ? "bg-blue-50 text-blue-700"
+                              : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                          )}
+                          onClick={() => {
+                            // Close sidebar on mobile after navigation
+                            if (window.innerWidth < 1024) {
+                              onClose();
+                            }
+                          }}
+                        >
+                          <div className={cn(
+                            "p-1.5 rounded-md transition-colors",
+                            active || hasActiveSub
+                              ? "bg-blue-100 text-blue-600"
+                              : "text-gray-400 group-hover:text-gray-600"
+                          )}>
+                            <IconComponent className="h-4 w-4" />
+                          </div>
+                          <span className="flex-1">{item.label}</span>
+                          {item.badge && (
+                            <Badge 
+                              variant="secondary" 
+                              className="text-xs bg-blue-100 text-blue-700 hover:bg-blue-200"
+                            >
+                              {item.badge}
+                            </Badge>
+                          )}
+                        </Link>
+                        {/* Dropdown toggle button */}
+                        <button
+                          onClick={() => toggleExpanded(item.id)}
+                          className={cn(
+                            "p-2 rounded-lg text-sm font-medium transition-all duration-200",
+                            active || hasActiveSub
+                              ? "text-blue-700 hover:bg-blue-100"
+                              : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                          )}
+                        >
+                          {isExpanded ? (
+                            <ChevronDown className="h-4 w-4" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
                     ) : (
                       <Link
                         href={item.href}

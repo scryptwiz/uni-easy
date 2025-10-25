@@ -27,6 +27,8 @@ export default function DashboardPage() {
     activeCourses: 0,
     assignmentsDue: 0,
     studyHours: 0,
+    todayStudyHours: 0,
+    studySessionsCount: 0,
     achievements: 0
   });
   const [loading, setLoading] = useState(true);
@@ -44,6 +46,8 @@ export default function DashboardPage() {
         activeCourses: data.activeCourses || 0,
         assignmentsDue: data.assignmentsDue || 0,
         studyHours: data.studyHours || 0,
+        todayStudyHours: data.todayStudyHours || 0,
+        studySessionsCount: data.studySessionsCount || 0,
         achievements: data.achievements || 0
       });
     } catch (error) {
@@ -177,11 +181,11 @@ export default function DashboardPage() {
               <Card className="hover:shadow-lg transition-all duration-300 border-0 shadow-md">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-gray-600 mb-1">Study Hours</p>
-                          <p className="text-3xl font-bold text-gray-900">{stats.studyHours}</p>
-                          <p className="text-xs text-purple-600 font-medium">This week</p>
-                        </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-600 mb-1">Study Hours</p>
+                      <p className="text-3xl font-bold text-gray-900">{stats.studyHours}</p>
+                      <p className="text-xs text-purple-600 font-medium">This week</p>
+                    </div>
                     <div className="p-3 bg-purple-100 rounded-2xl">
                       <Brain className="h-8 w-8 text-purple-600" />
                     </div>

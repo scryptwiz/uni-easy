@@ -9,7 +9,13 @@
     "lint": "eslint",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "db:reset": "node reset-and-migrate-db.js",
+    "db:seed": "node seed-database.js",
+    "db:setup": "npm run db:reset && npm run db:seed",
+    "db:fix": "node quick-db-fix.js",
+    "db:ensure": "node ensure-all-tables.js",
+    "db:seed-resources": "node quick-seed-resources.js"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",

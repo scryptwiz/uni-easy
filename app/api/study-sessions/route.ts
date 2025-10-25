@@ -43,9 +43,9 @@ export async function POST(request: NextRequest) {
       duration: duration || 0,
       notes: notes || "",
       createdAt: new Date(),
-    });
+    }).returning();
 
-    return NextResponse.json({ success: true, session: newSession });
+    return NextResponse.json({ success: true, session: newSession[0] });
   } catch (error) {
     console.error("Error creating study session:", error);
     return NextResponse.json({ error: "Failed to create study session" }, { status: 500 });
@@ -69,6 +69,10 @@ export async function PUT(request: NextRequest) {
       })
       .where(eq(studySessions.id, sessionId))
       .returning();
+
+    if (updatedSession.length === 0) {
+      return NextResponse.json({ error: "Session not found" }, { status: 404 });
+    }
 
     return NextResponse.json({ success: true, session: updatedSession[0] });
   } catch (error) {

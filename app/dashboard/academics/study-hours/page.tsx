@@ -6,23 +6,21 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
 import {
   Timer,
   Play,
-  Pause,
   Square,
   Zap,
   Target,
   Clock,
   BookOpen,
-  Brain,
-  TrendingUp,
-  Calendar,
-  BarChart3
+  BarChart3,
+  Calendar
 } from "lucide-react";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
 import { DashboardHeader } from "@/components/DashboardHeader";
+import { StartStudySessionModal } from "@/components/StartStudySessionModal";
+import { StudyGoalsModal } from "@/components/StudyGoalsModal";
 
 interface StudySession {
   id: string;
@@ -64,7 +62,7 @@ interface StudyStats {
 
 export default function StudyHoursPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sessions, setSessions] = useState<StudySession[]>([]);
+  // const [sessions, setSessions] = useState<StudySession[]>([]); // Removed unused state
   const [stats, setStats] = useState<StudyStats>({
     today: { totalMinutes: 0, sessionCount: 0, hours: 0 },
     week: { totalMinutes: 0, sessionCount: 0, hours: 0 },
@@ -74,6 +72,23 @@ export default function StudyHoursPage() {
   });
   const [currentSession, setCurrentSession] = useState<StudySession | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showStartSessionModal, setShowStartSessionModal] = useState(false);
+  const [showGoalsModal, setShowGoalsModal] = useState(false);
+  const [courses, setCourses] = useState<Array<{ id: string; code: string; title: string }>>([]);
+  const [goals, setGoals] = useState({
+    dailyHours: 4,
+    weeklyHours: 20,
+    streakGoal: 30,
+    currentStreak: 0
+  });
+  const [savingGoals, setSavingGoals] = useState(false);
+  const [startingSession, setStartingSession] = useState(false);
+  const [stoppingSession, setStoppingSession] = useState(false);
+  const [timer, setTimer] = useState({
+    isRunning: false,
+    startTime: null as Date | null,
+    elapsed: 0
+  });
   const { data: session, isPending } = useSession();
   const router = useRouter();
 
@@ -92,58 +107,233 @@ export default function StudyHoursPage() {
     }
   }, [session?.user?.id]);
 
+  const fetchUserCourses = useCallback(async () => {
+    if (!session?.user?.id) return;
+    
+    try {
+      const response = await fetch(`/api/courses/user?userId=${session.user.id}`);
+      const data = await response.json();
+      
+      if (response.ok) {
+        setCourses(data.courses.map((course: { courseId: string; course: { code: string; title: string } }) => ({
+          id: course.courseId,
+          code: course.course.code,
+          title: course.course.title
+        })));
+      }
+    } catch (error) {
+      console.error("Error fetching user courses:", error);
+    }
+  }, [session?.user?.id]);
+
+  const fetchStudyGoals = useCallback(async () => {
+    if (!session?.user?.id) return;
+    
+    try {
+      const response = await fetch(`/api/study-goals?userId=${session.user.id}`);
+      const data = await response.json();
+      
+      if (response.ok) {
+        setGoals(data.goals);
+      }
+    } catch (error) {
+      console.error("Error fetching study goals:", error);
+    }
+  }, [session?.user?.id]);
+
+  const saveStudyGoals = async (goalsData: { dailyHours: number; weeklyHours: number; streakGoal: number }) => {
+    if (!session?.user?.id) return;
+    
+    try {
+      setSavingGoals(true);
+      const response = await fetch('/api/study-goals', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: session.user.id,
+          dailyHours: goalsData.dailyHours,
+          weeklyHours: goalsData.weeklyHours,
+          streakGoal: goalsData.streakGoal
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setGoals(data.goals);
+        setShowGoalsModal(false);
+      } else {
+        const errorData = await response.json();
+        console.error("Error saving study goals:", errorData);
+        alert(`Failed to save goals: ${errorData.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error("Error saving study goals:", error);
+      alert("Failed to save goals. Please try again.");
+    } finally {
+      setSavingGoals(false);
+    }
+  };
+
+  const startStudySession = async (sessionData: { courseId: string; topic: string; notes?: string }) => {
+    if (!session?.user?.id || startingSession) return;
+    
+    try {
+      setStartingSession(true);
+      const response = await fetch('/api/study-sessions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: session.user.id,
+          courseId: sessionData.courseId,
+          subject: sessionData.topic,
+          duration: 0,
+          notes: sessionData.notes || ""
+        }),
+      });
+
+      if (response.ok) {
+        const newSession = await response.json();
+        const selectedCourse = courses.find(c => c.id === sessionData.courseId);
+        
+        setCurrentSession({
+          id: newSession.session.id,
+          courseId: sessionData.courseId,
+          courseName: selectedCourse?.title || "Unknown Course",
+          duration: 0,
+          startTime: new Date(),
+          isActive: true,
+          subject: sessionData.topic,
+          color: "bg-blue-500"
+        });
+        
+        setTimer({
+          isRunning: true,
+          startTime: new Date(),
+          elapsed: 0
+        });
+        
+        setShowStartSessionModal(false);
+      } else {
+        const errorData = await response.json();
+        console.error("Error starting study session:", errorData);
+        alert(`Failed to start session: ${errorData.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error("Error starting study session:", error);
+      alert("Failed to start session. Please try again.");
+    } finally {
+      setStartingSession(false);
+    }
+  };
+
+  const stopStudySession = async () => {
+    if (!currentSession || !session?.user?.id || stoppingSession) return;
+    
+    try {
+      setStoppingSession(true);
+      const duration = Math.floor((Date.now() - timer.startTime!.getTime()) / 60000); // Convert to minutes
+      
+      console.log("Stopping session with data:", {
+        sessionId: currentSession.id,
+        duration: duration,
+        notes: currentSession.subject
+      });
+      
+      const response = await fetch('/api/study-sessions', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sessionId: currentSession.id,
+          duration: duration,
+          notes: currentSession.subject
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Session stopped successfully:", data);
+        
+        if (data.success && data.session) {
+          setCurrentSession(null);
+          setTimer({
+            isRunning: false,
+            startTime: null,
+            elapsed: 0
+          });
+          
+          // Refresh stats
+          fetchStudyStats();
+        } else {
+          console.error("Session update failed - no session returned:", data);
+          alert("Failed to stop session - session not found or updated");
+        }
+      } else {
+        const errorData = await response.json();
+        console.error("Error stopping session:", errorData);
+        alert(`Failed to stop session: ${errorData.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error("Error stopping study session:", error);
+      alert("Failed to stop session. Please try again.");
+    } finally {
+      setStoppingSession(false);
+    }
+  };
+
   useEffect(() => {
     if (session) {
       fetchStudyStats();
+      fetchUserCourses();
+      fetchStudyGoals();
     }
-  }, [session, fetchStudyStats]);
+  }, [session, fetchStudyStats, fetchUserCourses, fetchStudyGoals]);
 
-  // Mock data for now
-  const mockSessions: StudySession[] = [
-    {
-      id: "1",
-      courseId: "cse-401",
-      courseName: "Artificial Intelligence",
-      duration: 90,
-      startTime: new Date(Date.now() - 2 * 60 * 60 * 1000),
-      endTime: new Date(Date.now() - 30 * 60 * 1000),
-      isActive: false,
-      subject: "Machine Learning",
-      color: "bg-blue-500"
-    },
-    {
-      id: "2",
-      courseId: "mth-303",
-      courseName: "Real Analysis",
-      duration: 75,
-      startTime: new Date(Date.now() - 4 * 60 * 60 * 1000),
-      endTime: new Date(Date.now() - 2.5 * 60 * 60 * 1000),
-      isActive: false,
-      subject: "Calculus",
-      color: "bg-green-500"
-    },
-    {
-      id: "3",
-      courseId: "phy-201",
-      courseName: "Physics II",
-      duration: 120,
-      startTime: new Date(Date.now() - 6 * 60 * 60 * 1000),
-      endTime: new Date(Date.now() - 4 * 60 * 60 * 1000),
-      isActive: false,
-      subject: "Electromagnetism",
-      color: "bg-purple-500"
-    },
-    {
-      id: "4",
-      courseId: "cse-401",
-      courseName: "Artificial Intelligence",
-      duration: 45,
-      startTime: new Date(),
-      isActive: true,
-      subject: "Neural Networks",
-      color: "bg-blue-500"
+  // Timer effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (timer.isRunning && timer.startTime) {
+      interval = setInterval(() => {
+        setTimer(prev => ({
+          ...prev,
+          elapsed: Math.floor((Date.now() - prev.startTime!.getTime()) / 1000)
+        }));
+      }, 1000);
     }
-  ];
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [timer.isRunning, timer.startTime]);
+
+  const formatTime = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${minutes}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const formatDuration = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    
+    if (hours > 0) {
+      return `${hours}h ${mins}m`;
+    }
+    return `${mins}m`;
+  };
+
+  // Removed unused mockSessions data
 
 
   const fetchStudyData = useCallback(async () => {
@@ -151,13 +341,9 @@ export default function StudyHoursPage() {
     
     try {
       setLoading(true);
-      // Fetch study sessions
-      const sessionsResponse = await fetch(`/api/study-sessions?userId=${session.user.id}`);
-      const sessionsData = await sessionsResponse.json();
-      
-      if (sessionsResponse.ok) {
-        setSessions(sessionsData.sessions || []);
-      }
+      // Fetch study sessions (currently not used in UI)
+      // const sessionsResponse = await fetch(`/api/study-sessions?userId=${session.user.id}`);
+      // const sessionsData = await sessionsResponse.json();
     } catch (error) {
       console.error("Error fetching study data:", error);
     } finally {
@@ -177,47 +363,6 @@ export default function StudyHoursPage() {
     }
   }, [session, fetchStudyData]);
 
-  const startSession = (courseId: string, courseName: string, subject: string, color: string) => {
-    const newSession: StudySession = {
-      id: `session-${Date.now()}`,
-      courseId,
-      courseName,
-      duration: 0,
-      startTime: new Date(),
-      isActive: true,
-      subject,
-      color
-    };
-    
-    setCurrentSession(newSession);
-    setSessions(prev => [newSession, ...prev]);
-  };
-
-  const stopSession = () => {
-    if (currentSession) {
-      const updatedSession = {
-        ...currentSession,
-        isActive: false,
-        endTime: new Date(),
-        duration: Math.floor((Date.now() - currentSession.startTime.getTime()) / (1000 * 60))
-      };
-      
-      setSessions(prev => prev.map(session => 
-        session.id === currentSession.id ? updatedSession : session
-      ));
-      setCurrentSession(null);
-    }
-  };
-
-  const formatDuration = (minutes: number) => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
-  };
-
-  const getTimeElapsed = (startTime: Date) => {
-    return Math.floor((Date.now() - startTime.getTime()) / (1000 * 60));
-  };
 
   if (isPending || loading) {
     return (
@@ -347,22 +492,28 @@ export default function StudyHoursPage() {
                           </div>
                           <div className="text-right">
                             <div className="text-3xl font-bold text-green-600">
-                              {formatDuration(getTimeElapsed(currentSession.startTime))}
+                              {formatTime(timer.elapsed)}
                             </div>
                             <div className="text-sm text-gray-500">elapsed</div>
                           </div>
                         </div>
                         <div className="flex space-x-3">
                           <Button 
-                            onClick={stopSession}
+                            onClick={stopStudySession}
                             className="bg-red-600 hover:bg-red-700"
+                            disabled={stoppingSession}
                           >
-                            <Square className="h-4 w-4 mr-2" />
-                            Stop Session
-                          </Button>
-                          <Button variant="outline">
-                            <Pause className="h-4 w-4 mr-2" />
-                            Pause
+                            {stoppingSession ? (
+                              <div className="flex items-center space-x-2">
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                <span>Stopping...</span>
+                              </div>
+                            ) : (
+                              <>
+                                <Square className="h-4 w-4 mr-2" />
+                                Stop Session
+                              </>
+                            )}
                           </Button>
                         </div>
                       </div>
@@ -374,22 +525,23 @@ export default function StudyHoursPage() {
                       </div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-2">No Active Session</h3>
                       <p className="text-gray-500 mb-6">Start a new study session to begin tracking your focus time.</p>
-                      <div className="grid grid-cols-2 gap-3">
-                        <Button 
-                          onClick={() => startSession("cse-401", "AI", "Machine Learning", "bg-blue-500")}
-                          className="bg-blue-600 hover:bg-blue-700"
-                        >
-                          <Play className="h-4 w-4 mr-2" />
-                          AI Study
-                        </Button>
-                        <Button 
-                          onClick={() => startSession("mth-303", "Math", "Calculus", "bg-green-500")}
-                          className="bg-green-600 hover:bg-green-700"
-                        >
-                          <Play className="h-4 w-4 mr-2" />
-                          Math Study
-                        </Button>
-                      </div>
+                      <Button 
+                        onClick={() => setShowStartSessionModal(true)}
+                        className="bg-green-600 hover:bg-green-700"
+                        disabled={startingSession}
+                      >
+                        {startingSession ? (
+                          <div className="flex items-center space-x-2">
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            <span>Starting...</span>
+                          </div>
+                        ) : (
+                          <>
+                            <Play className="h-4 w-4 mr-2" />
+                            Start Study Session
+                          </>
+                        )}
+                      </Button>
                     </div>
                   )}
                 </CardContent>
@@ -406,38 +558,40 @@ export default function StudyHoursPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
-                    {stats.recentSessions.length > 0 ? (
-                      stats.recentSessions.slice(0, 5).map((session) => (
-                        <div
-                          key={session.id}
-                          className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl hover:shadow-md transition-all duration-200 border border-gray-200"
-                        >
-                          <div className="flex items-center space-x-4">
-                            <div className="w-4 h-12 rounded-full bg-blue-500"></div>
-                            <div>
-                              <h3 className="font-bold text-gray-900 text-base">
-                                {session.topic}
-                              </h3>
-                              <p className="text-xs text-gray-500">
-                                {new Date(session.createdAt).toLocaleDateString()} at {new Date(session.createdAt).toLocaleTimeString()}
-                              </p>
+                  <div className="max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                    <div className="space-y-3 pr-2">
+                      {stats.recentSessions.length > 0 ? (
+                        stats.recentSessions.slice(0, 10).map((session) => (
+                          <div
+                            key={session.id}
+                            className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl hover:shadow-md transition-all duration-200 border border-gray-200"
+                          >
+                            <div className="flex items-center space-x-4">
+                              <div className="w-4 h-12 rounded-full bg-blue-500"></div>
+                              <div>
+                                <h3 className="font-bold text-gray-900 text-base">
+                                  {session.topic}
+                                </h3>
+                                <p className="text-xs text-gray-500">
+                                  {new Date(session.createdAt).toLocaleDateString()} at {new Date(session.createdAt).toLocaleTimeString()}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-lg font-bold text-gray-900">
+                                {formatDuration(session.duration)}
+                              </div>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <div className="text-lg font-bold text-gray-900">
-                              {formatDuration(session.duration)}
-                            </div>
-                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-8">
+                          <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                          <p className="text-gray-500">No recent study sessions</p>
+                          <p className="text-sm text-gray-400">Start your first session to see it here</p>
                         </div>
-                      ))
-                    ) : (
-                      <div className="text-center py-8">
-                        <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                        <p className="text-gray-500">No recent study sessions</p>
-                        <p className="text-sm text-gray-400">Start your first session to see it here</p>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -447,40 +601,61 @@ export default function StudyHoursPage() {
             <div className="mt-6">
               <Card className="border-0 shadow-md">
                 <CardHeader>
-                  <CardTitle className="text-xl font-bold text-gray-900 flex items-center space-x-2">
-                    <div className="p-2 bg-purple-100 rounded-lg">
-                      <Target className="h-5 w-5 text-purple-600" />
-                    </div>
-                    <span>Study Goals</span>
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-xl font-bold text-gray-900 flex items-center space-x-2">
+                      <div className="p-2 bg-purple-100 rounded-lg">
+                        <Target className="h-5 w-5 text-purple-600" />
+                      </div>
+                      <span>Study Goals</span>
+                    </CardTitle>
+                    <Button 
+                      onClick={() => setShowGoalsModal(true)}
+                      variant="outline"
+                      size="sm"
+                      className="text-purple-600 border-purple-200 hover:bg-purple-50"
+                      disabled={savingGoals}
+                    >
+                      {savingGoals ? (
+                        <div className="flex items-center space-x-2">
+                          <div className="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
+                          <span>Saving...</span>
+                        </div>
+                      ) : (
+                        <>
+                          <Target className="h-4 w-4 mr-2" />
+                          Set Goals
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-6 border border-green-200">
                       <div className="flex items-center justify-between mb-4">
                         <h3 className="font-bold text-gray-900">Daily Goal</h3>
-                        <span className="text-2xl font-bold text-green-600">4h</span>
+                        <span className="text-2xl font-bold text-green-600">{goals.dailyHours}h</span>
                       </div>
-                      <Progress value={62.5} className="w-full h-3 mb-2" />
-                      <p className="text-sm text-gray-600">2.5h of 4h completed</p>
+                      <Progress value={Math.min((stats.today.hours / goals.dailyHours) * 100, 100)} className="w-full h-3 mb-2" />
+                      <p className="text-sm text-gray-600">{stats.today.hours.toFixed(1)}h of {goals.dailyHours}h completed</p>
                     </div>
                     
                     <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-200">
                       <div className="flex items-center justify-between mb-4">
                         <h3 className="font-bold text-gray-900">Weekly Goal</h3>
-                        <span className="text-2xl font-bold text-blue-600">25h</span>
+                        <span className="text-2xl font-bold text-blue-600">{goals.weeklyHours}h</span>
                       </div>
-                      <Progress value={74} className="w-full h-3 mb-2" />
-                      <p className="text-sm text-gray-600">18.5h of 25h completed</p>
+                      <Progress value={Math.min((stats.week.hours / goals.weeklyHours) * 100, 100)} className="w-full h-3 mb-2" />
+                      <p className="text-sm text-gray-600">{stats.week.hours.toFixed(1)}h of {goals.weeklyHours}h completed</p>
                     </div>
                     
                     <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-200">
                       <div className="flex items-center justify-between mb-4">
                         <h3 className="font-bold text-gray-900">Streak Goal</h3>
-                        <span className="text-2xl font-bold text-purple-600">30 days</span>
+                        <span className="text-2xl font-bold text-purple-600">{goals.streakGoal} days</span>
                       </div>
-                      <Progress value={23.3} className="w-full h-3 mb-2" />
-                      <p className="text-sm text-gray-600">7 of 30 days completed</p>
+                      <Progress value={Math.min((stats.streak / goals.streakGoal) * 100, 100)} className="w-full h-3 mb-2" />
+                      <p className="text-sm text-gray-600">{stats.streak} of {goals.streakGoal} days completed</p>
                     </div>
                   </div>
                 </CardContent>
@@ -489,6 +664,24 @@ export default function StudyHoursPage() {
           </div>
         </main>
       </div>
+
+      {/* Start Study Session Modal */}
+      <StartStudySessionModal
+        isOpen={showStartSessionModal}
+        onClose={() => setShowStartSessionModal(false)}
+        onStart={startStudySession}
+        courses={courses}
+        loading={startingSession}
+      />
+
+      {/* Study Goals Modal */}
+      <StudyGoalsModal
+        isOpen={showGoalsModal}
+        onClose={() => setShowGoalsModal(false)}
+        onSave={saveStudyGoals}
+        currentGoals={goals}
+        loading={savingGoals}
+      />
     </div>
   );
 }

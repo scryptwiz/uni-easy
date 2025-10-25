@@ -54,6 +54,35 @@ export async function GET(request: NextRequest) {
 
     const studyHours = studyHoursResult[0]?.totalHours || 0;
 
+    // Get study hours today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const todayStudyHoursResult = await db
+      .select({ totalHours: sum(studySessions.duration) })
+      .from(studySessions)
+      .where(
+        and(
+          eq(studySessions.userId, userId),
+          gte(studySessions.createdAt, today)
+        )
+      );
+
+    const todayStudyHours = todayStudyHoursResult[0]?.totalHours || 0;
+
+    // Get study sessions count this week
+    const studySessionsCountResult = await db
+      .select({ count: count() })
+      .from(studySessions)
+      .where(
+        and(
+          eq(studySessions.userId, userId),
+          gte(studySessions.createdAt, oneWeekAgo)
+        )
+      );
+
+    const studySessionsCount = studySessionsCountResult[0]?.count || 0;
+
     // Get achievements count (placeholder - you can implement this based on your logic)
     const achievements = 8; // This could be calculated based on completed courses, study streaks, etc.
 
@@ -61,6 +90,8 @@ export async function GET(request: NextRequest) {
       activeCourses,
       assignmentsDue,
       studyHours: Math.round((studyHours as number) / 60), // Convert minutes to hours
+      todayStudyHours: Math.round((todayStudyHours as number) / 60), // Convert minutes to hours
+      studySessionsCount,
       achievements
     });
   } catch (error) {

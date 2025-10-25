@@ -187,3 +187,15 @@ export const aiQuestions = pgTable("ai_questions", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+// Study Goals table
+export const studyGoals = pgTable("study_goals", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  dailyHours: integer("daily_hours").notNull().default(4),
+  weeklyHours: integer("weekly_hours").notNull().default(20),
+  streakGoal: integer("streak_goal").notNull().default(30),
+  currentStreak: integer("current_streak").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
